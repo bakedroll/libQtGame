@@ -1,5 +1,7 @@
 #include <libQtGame/AbstractGameState.h>
 
+#include <QtUtilsLib/Multithreading.h>
+
 namespace libQtGame
 {
 
@@ -26,7 +28,7 @@ void AbstractGameState::onExit()
 
 void AbstractGameState::requestExitEventState(ExitGameStateMode mode)
 {
-  QtUtilsLib::MultithreadedApplication::executeInUiAsync([this, mode]()
+  QtUtilsLib::Multithreading::executeInUiAsync([this, mode]()
   {
     Q_EMIT forwardExitEventStateRequest(this, mode);
   });
@@ -34,7 +36,7 @@ void AbstractGameState::requestExitEventState(ExitGameStateMode mode)
 
 void AbstractGameState::requestResetTimeDelta()
 {
-  QtUtilsLib::MultithreadedApplication::executeInUiAsync([this]()
+  QtUtilsLib::Multithreading::executeInUiAsync([this]()
   {
     Q_EMIT forwardResetTimeDeltaRequest();
   });

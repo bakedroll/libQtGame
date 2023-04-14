@@ -2,10 +2,12 @@
 
 #include <utilsLib/Utils.h>
 
-#include <QtUtilsLib/MultithreadedApplication.h>
+#include <QtUtilsLib/Multithreading.h>
 
 #include <osgHelper/ioc/Injector.h>
 #include <osgHelper/SimulationCallback.h>
+
+#include <QObject>
 
 namespace libQtGame
 {
@@ -40,7 +42,7 @@ public:
   template <typename TState>
   void requestNewEventState(NewGameStateMode mode = NewGameStateMode::ContinueCurrent)
   {
-    QtUtilsLib::MultithreadedApplication::executeInUiAsync([this, mode]()
+    QtUtilsLib::Multithreading::executeInUiAsync([this, mode]()
     {
       const auto state = m_injector->inject<TState>();
       assert_return(state.valid());

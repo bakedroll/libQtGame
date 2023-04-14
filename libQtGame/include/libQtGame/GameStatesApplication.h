@@ -13,19 +13,19 @@
 
 #include <QMetaObject>
 
+#include <memory>
+
 namespace libQtGame
 {
+
+class GameStatesObject;
 
 class GameStatesApplication : public QtUtilsLib::QtUtilsApplication<osg::ref_ptr<osg::Referenced>>,
                               public osgHelper::GameApplication
 {
-  Q_OBJECT
-
 public:
-  GameStatesApplication(int& argc, char** argv);
+  GameStatesApplication();
   ~GameStatesApplication();
-
-  bool notify(QObject *receiver, QEvent *event) override;
 
 protected:
   struct StateData
@@ -68,16 +68,14 @@ private:
 
   osg::ref_ptr<libQtGame::GameUpdateCallback> m_updateCallback;
 
+  std::unique_ptr<GameStatesObject> m_obj;
+
   void updateStates(const osgHelper::SimulationCallback::SimulationData& data);
   void pushAndPrepareState(const osg::ref_ptr<AbstractGameState>& state);
   void exitState(const osg::ref_ptr<AbstractGameState>& state);
 
-private Q_SLOTS:
-  void onNewGameStateRequest(const osg::ref_ptr<AbstractGameState>& current,
-                             AbstractGameState::NewGameStateMode mode,
-                             const osg::ref_ptr<AbstractGameState>& newState);
-  void onExitGameStateRequest(const osg::ref_ptr<AbstractGameState>& current,
-                              AbstractGameState::ExitGameStateMode mode);
+  friend class GameStatesObject;
+
 };
 
 }

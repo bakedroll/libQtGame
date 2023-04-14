@@ -8,11 +8,14 @@
 #include <osgHelper/ShaderFactory.h>
 #include <osgHelper/TextureFactory.h>
 
+#include "GameStatesObject.h"
+
 namespace libQtGame
 {
-GameStatesApplication::GameStatesApplication(int& argc, char** argv) :
-  QtUtilsApplication<osg::ref_ptr<osg::Referenced>>(argc, argv),
-  GameApplication()
+GameStatesApplication::GameStatesApplication() :
+  QtUtilsApplication<osg::ref_ptr<osg::Referenced>>(),
+  GameApplication(),
+  m_obj(std::make_unique<GameStatesObject>(*this))
 {
   utilsLib::ILoggingManager::getLogger()->addLoggingStrategy(
     std::make_shared<utilsLib::StdOutLoggingStrategy>());
@@ -24,16 +27,6 @@ GameStatesApplication::GameStatesApplication(int& argc, char** argv) :
 
 GameStatesApplication::~GameStatesApplication() = default;
 
-bool GameStatesApplication::notify(QObject* receiver, QEvent* event)
-{
-  if (safeExecute([&]() { MultithreadedApplication::notify(receiver, event); return 0; }))
-  {
-    return true;
-  }
-
-  return false;
-}
-
 int GameStatesApplication::runGame()
 {
   return safeExecute([this]()
@@ -44,7 +37,7 @@ int GameStatesApplication::runGame()
     onInitialize(m_updateCallback);
 
     UTILS_LOG_INFO("Starting mainloop");
-    const auto ret = exec();
+    const auto ret = execApp();
 
     // shutdown/free all pointers
     for (auto& state : m_states)
@@ -62,12 +55,12 @@ int GameStatesApplication::runGame()
 
 void GameStatesApplication::prepareGameState(StateData& data)
 {
-  data.connections.push_back(connect(data.state.get(), &AbstractGameState::forwardNewEventStateRequest, this,
-    &GameStatesApplication::onNewGameStateRequest));
-  data.connections.push_back(connect(data.state.get(), &AbstractGameState::forwardExitEventStateRequest, this,
-    &GameStatesApplication::onExitGameStateRequest));
+  data.connections.push_back(QObject::connect(data.state.get(), &AbstractGameState::forwardNewEventStateRequest,
+    m_obj.get(), &GameStatesObject::onNewGameStateRequest));
+  data.connections.push_back(QObject::connect(data.state.get(), &AbstractGameState::forwardExitEventStateRequest,
+    m_obj.get(), &GameStatesObject::onExitGameStateRequest));
 
-  data.connections.push_back(connect(data.state.get(), &AbstractGameState::forwardResetTimeDeltaRequest, [this]()
+  data.connections.push_back(QObject::connect(data.state.get(), &AbstractGameState::forwardResetTimeDeltaRequest, [this]()
   {
     m_updateCallback->resetTimeDelta();
   }));
@@ -79,7 +72,7 @@ void GameStatesApplication::prepareGameState(StateData& data)
 void GameStatesApplication::onException(const std::string& message)
 {
   UTILS_LOG_FATAL("A critical exception occured: " + message);
-  quit();
+  quitApp();
 }
 
 void GameStatesApplication::registerEssentialComponents(osgHelper::ioc::InjectionContainer& container)
@@ -128,34 +121,6 @@ void GameStatesApplication::exitState(const osg::ref_ptr<AbstractGameState>& sta
   }
 
   UTILS_LOG_FATAL("Attempting to exit unknown state");
-}
-
-void GameStatesApplication::onNewGameStateRequest(const osg::ref_ptr<AbstractGameState>& current,
-  AbstractGameState::NewGameStateMode mode, const osg::ref_ptr<AbstractGameState>& newState)
-{
-  if (mode == AbstractGameState::NewGameStateMode::ExitCurrent)
-  {
-    exitState(current);
-  }
-
-  pushAndPrepareState(newState);
-}
-
-void GameStatesApplication::onExitGameStateRequest(const osg::ref_ptr<AbstractGameState>& current,
-  AbstractGameState::ExitGameStateMode mode)
-{
-  if (mode == AbstractGameState::ExitGameStateMode::ExitCurrent)
-  {
-    exitState(current);
-    return;
-  }
-
-  auto it = m_states.begin();
-  while (it != m_states.end())
-  {
-    exitState(it->state);
-    it = m_states.begin();
-  }
 }
 
 }
