@@ -84,6 +84,8 @@ void GameStatesApplication::registerEssentialComponents(osgHelper::ioc::Injectio
 
 void GameStatesApplication::updateStates(const osgHelper::SimulationCallback::SimulationData& data)
 {
+  QMutexLocker locker(&m_statesMutex);
+
   m_simData = data;
 
   if (m_states.empty())
@@ -121,6 +123,38 @@ void GameStatesApplication::exitState(const osg::ref_ptr<AbstractGameState>& sta
   }
 
   UTILS_LOG_FATAL("Attempting to exit unknown state");
+}
+
+void GameStatesApplication::onNewGameStateRequest(const osg::ref_ptr<AbstractGameState>& current,
+  AbstractGameState::NewGameStateMode mode, const osg::ref_ptr<AbstractGameState>& newState)
+{
+  QMutexLocker locker(&m_statesMutex);
+
+  if (mode == AbstractGameState::NewGameStateMode::ExitCurrent)
+  {
+    exitState(current);
+  }
+
+  pushAndPrepareState(newState);
+}
+
+void GameStatesApplication::onExitGameStateRequest(const osg::ref_ptr<AbstractGameState>& current,
+  AbstractGameState::ExitGameStateMode mode)
+{
+  QMutexLocker locker(&m_statesMutex);
+
+  if (mode == AbstractGameState::ExitGameStateMode::ExitCurrent)
+  {
+    exitState(current);
+    return;
+  }
+
+  auto it = m_states.begin();
+  while (it != m_states.end())
+  {
+    exitState(it->state);
+    it = m_states.begin();
+  }
 }
 
 }

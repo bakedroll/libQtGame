@@ -3,8 +3,6 @@
 #include <libQtGame/AbstractGameState.h>
 #include <libQtGame/GameUpdateCallback.h>
 
-#include <osgHelper/ioc/PointerTypeDefinition.h>
-
 #include <QtUtilsLib/QtUtilsApplication.h>
 
 #include <osgHelper/GameApplication.h>
@@ -12,6 +10,7 @@
 #include <osgHelper/SimulationCallback.h>
 
 #include <QMetaObject>
+#include <QRecursiveMutex>
 
 #include <memory>
 
@@ -52,6 +51,8 @@ protected:
   template <typename TState>
   bool injectPushAndPrepareState()
   {
+    QMutexLocker locker(&m_statesMutex);
+
     auto state = injector().inject<TState>();
     assert_return(state.valid(), false);
 
@@ -63,6 +64,8 @@ protected:
 private:
   using StateList = std::vector<StateData>;
 
+  QRecursiveMutex m_statesMutex;
+
   StateList m_states;
   AbstractGameState::SimulationData m_simData;
 
@@ -73,6 +76,14 @@ private:
   void updateStates(const osgHelper::SimulationCallback::SimulationData& data);
   void pushAndPrepareState(const osg::ref_ptr<AbstractGameState>& state);
   void exitState(const osg::ref_ptr<AbstractGameState>& state);
+
+  void onNewGameStateRequest(
+    const osg::ref_ptr<AbstractGameState>& current,
+    AbstractGameState::NewGameStateMode mode,
+    const osg::ref_ptr<AbstractGameState>& newState);
+  void onExitGameStateRequest(
+    const osg::ref_ptr<AbstractGameState>& current,
+    AbstractGameState::ExitGameStateMode mode);
 
   friend class GameStatesObject;
 
