@@ -17,6 +17,10 @@ GameStatesApplication::GameStatesApplication() :
   GameApplication(),
   m_obj(std::make_unique<GameStatesObject>(*this))
 {
+  qRegisterMetaType<osg::ref_ptr<AbstractGameState>>("osg::ref_ptr<AbstractGameState>");
+  qRegisterMetaType<AbstractGameState::NewGameStateMode>("NewGameStateMode");
+  qRegisterMetaType<AbstractGameState::ExitGameStateMode>("ExitGameStateMode");
+
   utilsLib::ILoggingManager::getLogger()->addLoggingStrategy(
     std::make_shared<utilsLib::StdOutLoggingStrategy>());
   utilsLib::ILoggingManager::getLogger()->addLoggingStrategy(
@@ -56,9 +60,9 @@ int GameStatesApplication::runGame()
 void GameStatesApplication::prepareGameState(StateData& data)
 {
   data.connections.push_back(QObject::connect(data.state.get(), &AbstractGameState::forwardNewEventStateRequest,
-    m_obj.get(), &GameStatesObject::onNewGameStateRequest));
+    m_obj.get(), &GameStatesObject::onNewGameStateRequest, Qt::QueuedConnection));
   data.connections.push_back(QObject::connect(data.state.get(), &AbstractGameState::forwardExitEventStateRequest,
-    m_obj.get(), &GameStatesObject::onExitGameStateRequest));
+    m_obj.get(), &GameStatesObject::onExitGameStateRequest, Qt::QueuedConnection));
 
   data.connections.push_back(QObject::connect(data.state.get(), &AbstractGameState::forwardResetTimeDeltaRequest, [this]()
   {

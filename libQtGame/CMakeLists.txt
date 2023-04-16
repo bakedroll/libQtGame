@@ -2,7 +2,7 @@ begin_project(libQtGame LIBRARY)
 
 enable_automoc()
 
-require_library(Qt MODULES Core)
+require_library(Qt MODULES Core Gui)
 
 require_project(osgHelper PATH osgHelper)
 require_project(utilsLib PATH utilsLib)
