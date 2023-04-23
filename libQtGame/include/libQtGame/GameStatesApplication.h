@@ -62,11 +62,11 @@ protected:
   }
 
 private:
-  using StateList = std::vector<StateData>;
-
   QRecursiveMutex m_statesMutex;
 
+  using StateList = std::vector<StateData>;
   StateList m_states;
+
   AbstractGameState::SimulationData m_simData;
 
   osg::ref_ptr<libQtGame::GameUpdateCallback> m_updateCallback;

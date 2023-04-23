@@ -57,6 +57,8 @@ private:
   bool m_isMouseCaptured;
   QPoint m_capturedMousePos;
 
+  bool handleMouseEvent(QMouseEvent* mouseEvent);
+
 };
 
 }
