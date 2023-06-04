@@ -47,6 +47,16 @@ private:
     osg::Vec2f      lastPos;
   };
 
+  struct MouseDragMoveData
+  {
+    bool valid = false;
+    bool isBegin = false;
+    Qt::MouseButton button = Qt::MouseButton::NoButton;
+    osg::Vec2f origin;
+    osg::Vec2f position;
+    osg::Vec2f change;
+  };
+
   mutable QRecursiveMutex m_mutex;
 
   std::optional<MouseDragData> m_mouseDragData;
@@ -57,7 +67,14 @@ private:
   bool m_isMouseCaptured;
   QPoint m_capturedMousePos;
 
+  void setMouseDown(Qt::MouseButton button, bool down);
+  void setKeyDown(Qt::Key key, bool down);
+
   bool handleMouseEvent(QMouseEvent* mouseEvent);
+  void handleMouseButtonPress(QMouseEvent* mouseEvent);
+  void handleMouseButtonRelease(QMouseEvent* mouseEvent);
+  void handleMouseCapture(QMouseEvent* mouseEvent);
+  MouseDragMoveData handleMouseDragMove(QMouseEvent* mouseEvent);
 
 };
 

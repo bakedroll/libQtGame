@@ -63,9 +63,7 @@ bool KeyboardMouseEventFilter::eventFilter(QObject* object, QEvent* event)
   {
     const auto mouseEvent = dynamic_cast<QMouseEvent*>(event);
     assert_return(mouseEvent, false);
-
-    QMutexLocker locker(&m_mutex);
-    m_isMouseDown[static_cast<Qt::MouseButton>(mouseEvent->button())] = (event->type() == QEvent::Type::MouseButtonPress);
+    setMouseDown(mouseEvent->button(), event->type() == QEvent::Type::MouseButtonPress);
   }
 
   switch (event->type())
@@ -75,9 +73,7 @@ bool KeyboardMouseEventFilter::eventFilter(QObject* object, QEvent* event)
   {
     const auto keyEvent = dynamic_cast<QKeyEvent*>(event);
     assert_return(keyEvent, false);
-
-    QMutexLocker locker(&m_mutex);
-    m_isKeyDown[static_cast<Qt::Key>(keyEvent->key())] = (event->type() == QEvent::Type::KeyPress);
+    setKeyDown(static_cast<Qt::Key>(keyEvent->key()), event->type() == QEvent::Type::KeyPress);
 
     auto accepted = false;
     Q_EMIT triggerKeyEvent(keyEvent, accepted);
@@ -119,76 +115,117 @@ bool KeyboardMouseEventFilter::eventFilter(QObject* object, QEvent* event)
   return false;
 }
 
-bool KeyboardMouseEventFilter::handleMouseEvent(QMouseEvent* mouseEvent)
+void KeyboardMouseEventFilter::setMouseDown(Qt::MouseButton button, bool down)
 {
   QMutexLocker locker(&m_mutex);
+  m_isMouseDown[button] = down;
+}
+
+void KeyboardMouseEventFilter::setKeyDown(Qt::Key key, bool down)
+{
+  QMutexLocker locker(&m_mutex);
+  m_isKeyDown[key] = down;
+}
+
+bool KeyboardMouseEventFilter::handleMouseEvent(QMouseEvent* mouseEvent)
+{
   switch (mouseEvent->type())
   {
   case QEvent::Type::MouseButtonPress:
   {
-    if (!m_mouseDragData)
-    {
-      const osg::Vec2f origin(static_cast<float>(mouseEvent->pos().x()), static_cast<float>(mouseEvent->pos().y()));
-      m_mouseDragData = MouseDragData{ mouseEvent->button(), false, origin, origin };
-    }
-
+    handleMouseButtonPress(mouseEvent);
     break;
   }
   case QEvent::Type::MouseMove:
   {
-    if (!m_mouseDragData)
+    const auto data = handleMouseDragMove(mouseEvent);
+    if (data.valid)
     {
-      break;
+      if (data.isBegin)
+      {
+        Q_EMIT triggerDragBegin(data.button, data.origin);
+      }
+      Q_EMIT triggerDragMove(data.button, data.origin, data.position, data.change);
     }
-
-    if (!m_mouseDragData->moved)
-    {
-      Q_EMIT triggerDragBegin(m_mouseDragData->button, m_mouseDragData->origin);
-      m_mouseDragData->moved = true;
-    }
-
-    const osg::Vec2f pos(static_cast<float>(mouseEvent->pos().x()), static_cast<float>(mouseEvent->pos().y()));
-
-    if (m_isMouseCaptured)
-    {
-      const auto delta = m_capturedMousePos - mouseEvent->globalPos();
-      Q_EMIT triggerDragMove(m_mouseDragData->button, m_mouseDragData->origin,
-        pos, osg::Vec2f(static_cast<int>(delta.x()), static_cast<int>(delta.y())));
-    }
-    else
-    {
-      Q_EMIT triggerDragMove(m_mouseDragData->button, m_mouseDragData->origin,
-        pos, m_mouseDragData->lastPos - pos);
-    }
-
-    m_mouseDragData->lastPos = pos;
 
     break;
   }
   case QEvent::Type::MouseButtonRelease:
   {
-    if (m_mouseDragData && (m_mouseDragData->button == mouseEvent->button()))
-    {
-      Q_EMIT triggerDragEnd(m_mouseDragData->button, m_mouseDragData->origin,
-        osg::Vec2f(static_cast<float>(mouseEvent->pos().x()), static_cast<float>(mouseEvent->pos().y())));
-
-      m_mouseDragData.reset();
-    }
-
+    handleMouseButtonRelease(mouseEvent);
     break;
   }
   default:
     break;
   }
 
-  if (mouseEvent->type() == QEvent::Type::MouseMove && m_isMouseCaptured)
-  {
-    QCursor::setPos(m_capturedMousePos);
-  }
+  handleMouseCapture(mouseEvent);
 
   auto accepted = false;
   Q_EMIT triggerMouseEvent(mouseEvent, accepted);
   return accepted;
+}
+
+void KeyboardMouseEventFilter::handleMouseButtonPress(QMouseEvent* mouseEvent)
+{
+  QMutexLocker locker(&m_mutex);
+  if (!m_mouseDragData)
+  {
+    const osg::Vec2f origin(static_cast<float>(mouseEvent->pos().x()), static_cast<float>(mouseEvent->pos().y()));
+    m_mouseDragData = MouseDragData{ mouseEvent->button(), false, origin, origin };
+  }
+}
+
+void KeyboardMouseEventFilter::handleMouseButtonRelease(QMouseEvent* mouseEvent)
+{
+  QMutexLocker locker(&m_mutex);
+  if (m_mouseDragData && (m_mouseDragData->button == mouseEvent->button()))
+  {
+    Q_EMIT triggerDragEnd(m_mouseDragData->button, m_mouseDragData->origin,
+      osg::Vec2f(static_cast<float>(mouseEvent->pos().x()), static_cast<float>(mouseEvent->pos().y())));
+
+    m_mouseDragData.reset();
+  }
+
+}
+
+void KeyboardMouseEventFilter::handleMouseCapture(QMouseEvent* mouseEvent)
+{
+  QMutexLocker locker(&m_mutex);
+  if (mouseEvent->type() == QEvent::Type::MouseMove && m_isMouseCaptured)
+  {
+    QCursor::setPos(m_capturedMousePos);
+  }
+}
+
+KeyboardMouseEventFilter::MouseDragMoveData KeyboardMouseEventFilter::handleMouseDragMove(QMouseEvent* mouseEvent)
+{
+  QMutexLocker locker(&m_mutex);
+  if (!m_mouseDragData)
+  {
+    return {};
+  }
+
+  const osg::Vec2f pos(static_cast<float>(mouseEvent->pos().x()), static_cast<float>(mouseEvent->pos().y()));
+  MouseDragMoveData data { true, !m_mouseDragData->moved, m_mouseDragData->button, m_mouseDragData->origin, pos, osg::Vec2f() };
+
+  if (!m_mouseDragData->moved)
+  {
+    m_mouseDragData->moved = true;
+  }
+
+  if (m_isMouseCaptured)
+  {
+    const auto delta = m_capturedMousePos - mouseEvent->globalPos();
+    data.change = osg::Vec2f(static_cast<int>(delta.x()), static_cast<int>(delta.y()));
+  }
+  else
+  {
+    data.change = m_mouseDragData->lastPos - pos;
+  }
+
+  m_mouseDragData->lastPos = pos;
+  return data;
 }
 
 }
