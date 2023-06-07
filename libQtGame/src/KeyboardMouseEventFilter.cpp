@@ -73,6 +73,11 @@ bool KeyboardMouseEventFilter::eventFilter(QObject* object, QEvent* event)
   {
     const auto keyEvent = dynamic_cast<QKeyEvent*>(event);
     assert_return(keyEvent, false);
+
+    if (keyEvent->isAutoRepeat())
+    {
+      break;
+    }
     setKeyDown(static_cast<Qt::Key>(keyEvent->key()), event->type() == QEvent::Type::KeyPress);
 
     auto accepted = false;
