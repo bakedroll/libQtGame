@@ -86,6 +86,21 @@ void GameStatesApplication::registerEssentialComponents(osgHelper::ioc::Injectio
   container.registerSingletonInterfaceType<osgHelper::ITextureFactory, osgHelper::TextureFactory>();
 }
 
+QRecursiveMutex& GameStatesApplication::statesMutex()
+{
+  return m_statesMutex;
+}
+
+std::vector<osg::ref_ptr<AbstractGameState>> GameStatesApplication::getGameStates() const
+{
+  std::vector<osg::ref_ptr<AbstractGameState>> result;
+  for (const auto& stateData : m_states)
+  {
+    result.emplace_back(stateData.state);
+  }
+  return result;
+}
+
 void GameStatesApplication::updateStates(const osgHelper::SimulationCallback::SimulationData& data)
 {
   QMutexLocker locker(&m_statesMutex);

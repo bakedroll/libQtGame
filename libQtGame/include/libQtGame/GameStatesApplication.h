@@ -61,6 +61,9 @@ protected:
     return true;
   }
 
+  QRecursiveMutex& statesMutex();
+  std::vector<osg::ref_ptr<AbstractGameState>> getGameStates() const;
+
 private:
   QRecursiveMutex m_statesMutex;
 
