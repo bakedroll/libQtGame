@@ -157,7 +157,12 @@ bool KeyboardMouseEventFilter::handleMouseEvent(QMouseEvent* mouseEvent)
   }
   case QEvent::Type::MouseButtonRelease:
   {
-    handleMouseButtonRelease(mouseEvent);
+    const auto dragData = handleMouseButtonRelease(mouseEvent);
+    if (dragData.has_value())
+    {
+      Q_EMIT triggerDragEnd(dragData->button, dragData->origin,
+        osg::Vec2f(static_cast<float>(mouseEvent->pos().x()), static_cast<float>(mouseEvent->pos().y())));
+    }
     break;
   }
   default:
@@ -181,17 +186,17 @@ void KeyboardMouseEventFilter::handleMouseButtonPress(QMouseEvent* mouseEvent)
   }
 }
 
-void KeyboardMouseEventFilter::handleMouseButtonRelease(QMouseEvent* mouseEvent)
+std::optional<KeyboardMouseEventFilter::MouseDragData> KeyboardMouseEventFilter::handleMouseButtonRelease(QMouseEvent* mouseEvent)
 {
   QMutexLocker locker(&m_mutex);
   if (m_mouseDragData && (m_mouseDragData->button == mouseEvent->button()))
   {
-    Q_EMIT triggerDragEnd(m_mouseDragData->button, m_mouseDragData->origin,
-      osg::Vec2f(static_cast<float>(mouseEvent->pos().x()), static_cast<float>(mouseEvent->pos().y())));
-
+    const auto result = m_mouseDragData;
     m_mouseDragData.reset();
+    return result;
   }
 
+  return std::nullopt;
 }
 
 void KeyboardMouseEventFilter::handleMouseCapture(QMouseEvent* mouseEvent)

@@ -42,9 +42,9 @@ private:
   struct MouseDragData
   {
     Qt::MouseButton button;
-    bool            moved;
-    osg::Vec2f      origin;
-    osg::Vec2f      lastPos;
+    bool moved = false;
+    osg::Vec2f origin;
+    osg::Vec2f lastPos;
   };
 
   struct MouseDragMoveData
@@ -72,7 +72,7 @@ private:
 
   bool handleMouseEvent(QMouseEvent* mouseEvent);
   void handleMouseButtonPress(QMouseEvent* mouseEvent);
-  void handleMouseButtonRelease(QMouseEvent* mouseEvent);
+  std::optional<MouseDragData> handleMouseButtonRelease(QMouseEvent* mouseEvent);
   void handleMouseCapture(QMouseEvent* mouseEvent);
   MouseDragMoveData handleMouseDragMove(QMouseEvent* mouseEvent);
 
