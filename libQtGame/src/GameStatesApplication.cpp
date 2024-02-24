@@ -86,6 +86,10 @@ void GameStatesApplication::registerEssentialComponents(osgHelper::ioc::Injectio
   container.registerSingletonInterfaceType<osgHelper::ITextureFactory, osgHelper::TextureFactory>();
 }
 
+void GameStatesApplication::onPreStatesUpdate(const osgHelper::SimulationCallback::SimulationData& data)
+{
+}
+
 void GameStatesApplication::updateStates(const osgHelper::SimulationCallback::SimulationData& data)
 {
   QMutexLocker locker(&m_statesMutex);
@@ -97,6 +101,7 @@ void GameStatesApplication::updateStates(const osgHelper::SimulationCallback::Si
     onEmptyStateList();
   }
 
+  onPreStatesUpdate(data);
   for (auto& state : m_states)
   {
     state.state->onUpdate(data);

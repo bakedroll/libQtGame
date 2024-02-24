@@ -47,6 +47,7 @@ protected:
   virtual void onExitGameState(const osg::ref_ptr<AbstractGameState>& state) = 0;
   virtual void onEmptyStateList() = 0;
   virtual void onShutdown() = 0;
+  virtual void onPreStatesUpdate(const osgHelper::SimulationCallback::SimulationData& data);
 
   template <typename TState>
   bool injectPushAndPrepareState()
