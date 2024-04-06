@@ -9,6 +9,7 @@ AbstractGameState::AbstractGameState(osgHelper::ioc::Injector& injector)
   : QObject()
   , osg::Referenced()
   , m_injector(&injector)
+  , m_isExiting(false)
 {
 }
 
@@ -28,6 +29,7 @@ void AbstractGameState::onExit()
 
 void AbstractGameState::requestExitEventState(ExitGameStateMode mode)
 {
+  m_isExiting = true;
   QtUtilsLib::Multithreading::executeInUiAsync([this, mode]()
   {
     Q_EMIT forwardExitEventStateRequest(this, mode);
@@ -40,6 +42,11 @@ void AbstractGameState::requestResetTimeDelta()
   {
     Q_EMIT forwardResetTimeDeltaRequest();
   });
+}
+
+bool AbstractGameState::isExiting() const
+{
+  return m_isExiting;
 }
 
 }

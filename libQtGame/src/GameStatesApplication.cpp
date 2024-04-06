@@ -104,7 +104,10 @@ void GameStatesApplication::updateStates(const osgHelper::SimulationCallback::Si
   onPreStatesUpdate(data);
   for (auto& state : m_states)
   {
-    state.state->onUpdate(data);
+    if (!state.state->isExiting())
+    {
+      state.state->onUpdate(data);
+    }
   }
 }
 
@@ -132,6 +135,7 @@ void GameStatesApplication::exitState(const osg::ref_ptr<AbstractGameState>& sta
   }
 
   UTILS_LOG_FATAL("Attempting to exit unknown state");
+  assert(false);
 }
 
 void GameStatesApplication::onNewGameStateRequest(const osg::ref_ptr<AbstractGameState>& current,

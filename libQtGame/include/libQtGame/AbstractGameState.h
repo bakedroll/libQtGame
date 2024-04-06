@@ -42,6 +42,11 @@ public:
   template <typename TState>
   void requestNewEventState(NewGameStateMode mode = NewGameStateMode::ContinueCurrent)
   {
+    if (mode == NewGameStateMode::ExitCurrent)
+    {
+      m_isExiting = true;
+    }
+
     QtUtilsLib::Multithreading::executeInUiAsync([this, mode]()
     {
       const auto state = m_injector->inject<TState>();
@@ -54,6 +59,8 @@ public:
   void requestExitEventState(ExitGameStateMode mode = ExitGameStateMode::ExitCurrent);
   void requestResetTimeDelta();
 
+  bool isExiting() const;
+
 Q_SIGNALS:
   void forwardNewEventStateRequest(const osg::ref_ptr<AbstractGameState>& current, NewGameStateMode mode,
                                    const osg::ref_ptr<AbstractGameState>& newState);
@@ -63,6 +70,7 @@ Q_SIGNALS:
 
 private:
   osgHelper::ioc::Injector* m_injector;
+  bool m_isExiting;
 
 };
 
