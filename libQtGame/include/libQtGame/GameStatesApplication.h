@@ -3,14 +3,14 @@
 #include <libQtGame/AbstractGameState.h>
 #include <libQtGame/GameUpdateCallback.h>
 
+#include <QMetaObject>
+#include <QRecursiveMutex>
+
 #include <QtUtilsLib/QtUtilsApplication.h>
 
 #include <osgHelper/GameApplication.h>
 #include <osgHelper/ioc/InjectionContainer.h>
 #include <osgHelper/SimulationCallback.h>
-
-#include <QMetaObject>
-#include <QRecursiveMutex>
 
 #include <memory>
 

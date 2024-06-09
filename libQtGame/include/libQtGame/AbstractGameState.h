@@ -1,13 +1,13 @@
 #pragma once
 
+#include <QObject>
+
 #include <utilsLib/Utils.h>
 
 #include <QtUtilsLib/Multithreading.h>
 
 #include <osgHelper/ioc/Injector.h>
 #include <osgHelper/SimulationCallback.h>
-
-#include <QObject>
 
 namespace libQtGame
 {
